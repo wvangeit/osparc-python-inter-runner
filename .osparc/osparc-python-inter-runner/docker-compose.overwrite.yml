@@ -1,0 +1,4 @@
+services:
+  osparc-python-inter-runner:
+    build:
+      dockerfile: Dockerfile
