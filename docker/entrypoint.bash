@@ -6,8 +6,8 @@ INFO="INFO: [$(basename "$0")] "
 
 # BOOTING application ---------------------------------------------
 echo "$INFO" "Starting container ..."
-echo "$INFO" "  User    :$(id "$(whoami)")"
-echo "$INFO" "  Workdir :$(pwd)"
+# echo "$INFO" "  User    :$(id "$(whoami)")"
+# echo "$INFO" "  Workdir :$(pwd)"
 
 
 # expect input/output folders to be mounted
@@ -28,18 +28,17 @@ then
     echo "ERROR: '${DY_SIDECAR_PATH_INPUTS}' and '${DY_SIDECAR_PATH_OUTPUTS}' have different group id's. not allowed" && exit 1
 fi
 
-echo "listing inputs folder ${DY_SIDECAR_PATH_INPUTS}"
-ls -lah "${DY_SIDECAR_PATH_INPUTS}"
-echo "listing outputs folder ${DY_SIDECAR_PATH_OUTPUTS}"
-ls -lah "${DY_SIDECAR_PATH_OUTPUTS}"
+# echo "listing inputs folder ${DY_SIDECAR_PATH_INPUTS}"
+# ls -lah "${DY_SIDECAR_PATH_INPUTS}"
+# echo "listing outputs folder ${DY_SIDECAR_PATH_OUTPUTS}"
+# ls -lah "${DY_SIDECAR_PATH_OUTPUTS}"
 
-echo "setting correct user id/group id..."
+# echo "setting correct user id/group id..."
 HOST_USERID=$(stat -c %u "${DY_SIDECAR_PATH_INPUTS}")
 HOST_GROUPID=$(stat -c %g "${DY_SIDECAR_PATH_INPUTS}")
 CONTAINER_GROUPNAME=$(getent group | grep "${HOST_GROUPID}" | cut --delimiter=: --fields=1 || echo "")
-echo "CONTAINER_GROUPNAME='$CONTAINER_GROUPNAME'"
+# echo "CONTAINER_GROUPNAME='$CONTAINER_GROUPNAME'"
 
-echo
 echo "$INFO" "Starting python script ..."
 
-exec python /docker/loop.py
+python /docker/loop.py

@@ -1,10 +1,12 @@
 import time
+import logging
+logging.basicConfig(level=logging.INFO)
 
 
 def main():
 
     while True:
-        print('Woke up')
+        logging.info('Woke up')
         time.sleep(1)
 
 
