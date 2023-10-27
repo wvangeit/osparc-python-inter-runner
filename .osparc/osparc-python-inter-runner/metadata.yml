@@ -1,8 +1,8 @@
 name: InteractivePythonservice
 description: "InteractivePythonservice"
 key: simcore/services/dynamic/osparc-python-inter-runner
-version: 0.0.4
-integration-version: 0.0.4
+version: 0.0.5
+integration-version: 0.0.5
 type: dynamic
 authors:
   - name: Werner Van Geit

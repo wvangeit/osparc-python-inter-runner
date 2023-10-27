@@ -8,7 +8,7 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("osparc-python-inter-runner-prepare")
 
-INPUT_1 = Path(os.environ["INPUT_1"])
+INPUT_1 = Path(os.environ["DY_SIDECAR_PATH_INPUTS"])  # TODO: this is wrong ...
 main_script_path = Path("main.sh")
 
 
@@ -91,9 +91,12 @@ def setup():
 
 
 def start():
-    logger.info("Starting python scripts ...")
-    proc = subprocess.Popen([f'{main_script_path.resolve()}'])
-    proc.wait()
+    logger.info("Starting main script ...")
+    if main_script_path.exists():
+        proc = subprocess.Popen([f'{main_script_path.resolve()}'])
+        proc.wait()
+    else:
+        logger.info("No main script found, exiting")
     logger.info("Finished running python scripts")
 
 
