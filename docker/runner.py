@@ -9,7 +9,7 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("osparc-python-inter-runner-prepare")
 
-INPUT_1 = Path(os.environ["DY_SIDECAR_PATH_INPUTS"])  # TODO: this is wrong ...
+INPUT_1 = Path(os.environ["DY_SIDECAR_PATH_INPUTS"]) / Path('input_1')
 main_script_path = Path("main.sh")
 
 

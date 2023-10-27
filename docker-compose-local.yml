@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   osparc-python-inter-runner:
-    image: simcore/services/dynamic/osparc-python-inter-runner:0.0.6
+    image: simcore/services/dynamic/osparc-python-inter-runner:0.0.7
     ports:
       - "8888:8888"
     environment:
