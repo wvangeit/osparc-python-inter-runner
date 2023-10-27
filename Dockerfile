@@ -7,4 +7,4 @@ USER $NB_UID
 # Copying boot scripts                                                                                                                                                                                                                                                                                                   
 COPY docker /docker
 
-ENTRYPOINT [ "/bin/bash", "/docker/entrypoint.bash" ]
+ENTRYPOINT [ "/bin/bash", "/docker/entrypoint.bash", "/bin/sh", "-c", "/docker/runner.bash" ]
