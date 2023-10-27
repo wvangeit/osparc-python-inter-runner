@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
@@ -17,8 +18,10 @@ def _find_user_code_entrypoint(code_dir: Path) -> Path:
     code_files = list(code_dir.rglob("*.py"))
 
     if not code_files:
-        raise ValueError(
-            f"No python scripts found in user-provided directory: {code_dir}")
+        logger.info('No python files found')
+        return None
+        # raise ValueError(
+        #    f"No python scripts found in user-provided directory: {code_dir}")
 
     if len(code_files) > 1:
         code_files = list(code_dir.rglob("main.py"))
@@ -69,7 +72,12 @@ def _show_io_environments() -> None:
 def setup():
     _show_io_environments()
 
-    user_code_entrypoint = _find_user_code_entrypoint(INPUT_1)
+    user_code_entrypoint = None
+    while not user_code_entrypoint:
+        logger.info('Trying to find python files in input directory:')
+        user_code_entrypoint = _find_user_code_entrypoint(INPUT_1)
+        time.sleep(10)
+
     requirements_txt = _ensure_pip_requirements(INPUT_1)
 
     logger.info("Preparing launch script ...")
