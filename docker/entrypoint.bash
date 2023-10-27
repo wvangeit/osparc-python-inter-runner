@@ -25,3 +25,5 @@ HOST_GROUPID=$(stat -c %g "${DY_SIDECAR_PATH_INPUTS}")
 CONTAINER_GROUPNAME=$(getent group | grep "${HOST_GROUPID}" | cut --delimiter=: --fields=1 || echo "")
 
 echo "$INFO" "Starting runner ..."
+
+exec /docker/runner.bash
