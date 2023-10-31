@@ -86,8 +86,8 @@ def setup():
         "#!/bin/sh", "set -o errexit", "set -o nounset",
         "IFS=$(printf '\\n\\t')", 'echo "Creating virtual environment ..."',
         f'python3 -m venv --system-site-packages --symlinks --upgrade "{venv_dir}"',
-        f'"{venv_dir}/bin/pip" install -U pip wheel setuptools',
-        f'"{venv_dir}/bin/pip" install -r "{requirements_txt}"'
+        f'"{venv_dir}/bin/pip" install -qU pip wheel setuptools',
+        f'"{venv_dir}/bin/pip" install -qr "{requirements_txt}"'
         if requirements_txt else '',
         f'echo "Executing code {user_code_entrypoint.name}..."',
         f'cd "{user_code_entrypoint.parents[0]}"',
