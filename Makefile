@@ -4,7 +4,7 @@ SHELL = /bin/sh
 .DEFAULT_GOAL := help
 
 export DOCKER_IMAGE_NAME ?= osparc-python-inter-runner
-export DOCKER_IMAGE_TAG ?= 0.0.7
+export DOCKER_IMAGE_TAG ?= 0.0.8
 
 define _bumpversion
 	# upgrades as $(subst $(1),,$@) version, commits and tags
