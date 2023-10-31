@@ -91,7 +91,7 @@ def setup():
         if requirements_txt else '',
         f'echo "Executing code {user_code_entrypoint.name}..."',
         f'cd "{user_code_entrypoint.parents[0]}"',
-        f'"{venv_dir}/bin/python3" "{user_code_entrypoint}" &',
+        f'"{venv_dir}/bin/python3" "{user_code_entrypoint}"',
         'echo "DONE ..."',]
     main_script_path = Path("main.sh")
     main_script_path.write_text("\n".join(script), encoding="utf-8")
