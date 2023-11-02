@@ -55,8 +55,7 @@ def _ensure_pip_requirements(code_dir: Path) -> Path:
 def _show_io_environments() -> None:
     for io_type in ["input", "output"]:
         logger.info(
-            "%s ENVs available: %s",
-            io_type.capitalize(),
+            f"{io_type.capitalize()} ENVs available: %s",
             json.dumps(
                 list(
                     filter(

@@ -10,6 +10,12 @@ authors:
     affiliation: IT'IS Foundation
 contact: 18575092+wvangeit@users.noreply.github.com
 inputs:
+  input_0:
+    displayOrder: 0.0
+    label: main script
+    description:
+     Path of main script to run
+    type: string
   input_1:
     displayOrder: 1.0
     label: python_files
