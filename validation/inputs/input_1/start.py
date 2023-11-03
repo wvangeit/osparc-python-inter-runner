@@ -5,9 +5,10 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
 
-    while True:
+    for _ in range(5):
         logging.info('Woke up')
-        time.sleep(1)
+        time.sleep(.1)
+    logging.info('Out of bed')
 
 
 if __name__ == '__main__':

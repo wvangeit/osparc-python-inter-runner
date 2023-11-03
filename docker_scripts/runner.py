@@ -15,7 +15,7 @@ def main():
     """Main"""
 
     input_path = pl.Path(
-        os.environ["DY_SIDECAR_PATH_INPUTS"]) / 'input_1'
+        os.environ["DY_SIDECAR_PATH_INPUTS"])
 
     pyrunner = PythonRunner(input_path)
 
@@ -33,6 +33,9 @@ class PythonRunner:
         """Constructor"""
 
         self.input_path = input_path
+        self.input0_path = self.input_path / 'input_0'
+        self.input1_path = self.input_path / 'input_1'
+        self.keyvalues_path = self.input_path / 'key_values.json'
         self.main_sh_path = pl.Path(__file__).parent.absolute() / 'main.sh'
         self.venv_dir = pl.Path.home() / ".venv"
         self.polling_time = 1
@@ -75,34 +78,25 @@ class PythonRunner:
             logger.info("Found: %s", requirements)
         return requirements
 
-    def _show_io_environments(self) -> None:
-        for io_type in ["input", "output"]:
-            logger.info(
-                f"{io_type.capitalize()} ENVs available: %s",
-                json.dumps(
-                    list(
-                        filter(
-                            lambda x,
-                            io_type=io_type: f"{io_type.upper()}_" in x,
-                            os.environ,
-                        )),
-                    indent=2,
-                ),
-            )
-
     def try_find_user_entrypoint(self):
+        """Trying to find entrypoin"""
 
-        while not self.user_code_entrypoint:
+        user_code_entrypoint = None
+        while not user_code_entrypoint:
             logger.info(
                 'Trying to find python files in input directory: '
-                f'{self.input_path}')
-            self.user_code_entrypoint = self._find_user_code_entrypoint(
-                self.input_path)
+                f'{self.input1_path}')
+            user_code_entrypoint = self._find_user_code_entrypoint(
+                self.input1_path)
             time.sleep(self.polling_time)
 
-        self.found_user_code_entrypoint = True
+        return user_code_entrypoint
 
-        self.requirements_path = self._ensure_pip_requirements(self.input_path)
+    def setup_entrypoint(self):
+        """Setup entrypoint after it is found"""
+
+        self.requirements_path = self._ensure_pip_requirements(
+            self.input1_path)
         self.main_env = {}
         self.main_env['OSPARC_VENV_DIR'] = str(self.venv_dir)
         self.main_env['OSPARC_USER_ENTRYPOINT_PATH'] = \
@@ -113,17 +107,50 @@ class PythonRunner:
             str(self.user_code_entrypoint.parents[0])
 
     def setup(self):
-        self._show_io_environments()
+        if self.keyvalues_path.exists():
+            self.keyvalues = self.read_keyvalues()
+            logging.info(f"Using key-values: {self.keyvalues}")
+        else:
+            logging.info("No key-values file found at "
+                         f"{self.keyvalues_path.resolve()}")
 
-        # Try to find user entrypoint, will poll until found
-        self.try_find_user_entrypoint()
+        if 'input_0' in self.keyvalues and \
+                'input_0' in self.keyvalues['input_0']:
+            self.user_code_entrypoint = self.input1_path / \
+                self.keyvalues['input_0']['input_0']
+            if not self.user_code_entrypoint.exists():
+                raise ValueError('User provided entrypoint '
+                                 f'{self.keyvalues["input_0"]["input_0"]} '
+                                 f'not found {self.input1_path.resolve()}')
+        else:
+            # Try to find user entrypoint, will poll until found
+            self.user_code_entrypoint = self.try_find_user_entrypoint()
+
+        # We have found the user entrypoint
+        self.found_user_code_entrypoint = True
+
+        # Set up the user entrypoint
+        self.setup_entrypoint()
+
+    def read_keyvalues(self):
+        """Read keyvalues file"""
+
+        with open(self.keyvalues_path) as keyvalues_file:
+            keyvalues_unprocessed = json.load(keyvalues_file)
+
+        keyvalues = {}
+        for key, value in keyvalues_unprocessed.items():
+            keyvalues[key] = {}
+            keyvalues[key][value['key']] = value['value']
+
+        return keyvalues
 
     def start(self):
         logger.info(f"Starting script {self.main_sh_path.resolve()} ...")
         if self.found_user_code_entrypoint:
             env = os.environ.copy()
             env |= self.main_env  # Merge envs
-            logging.info(f'Using env: {env}')
+            logging.debug(f'Using env: {env}')
 
             proc = subprocess.Popen(
                 [f'{self.main_sh_path.resolve()}'], env=env)
