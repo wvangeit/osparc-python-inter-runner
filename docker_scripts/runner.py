@@ -91,11 +91,19 @@ class PythonRunner:
                          f"{self.keyvalues_path}")
             time.sleep(self.polling_time)
 
-        user_code_entrypoint = self._find_keyvalues_user_code_entrypoint()
-        if not user_code_entrypoint:
-            user_code_entrypoint = self._find_user_code_entrypoint(
-                self.input1_path)
+        while not user_code_entrypoint:
+            logging.info("Waiting for correct keyvalues in "
+                         f"{self.keyvalues_path}")
+            time.sleep(self.polling_time)
+            user_code_entrypoint = self._find_keyvalues_user_code_entrypoint()
 
+        '''
+        if not user_code_entrypoint:
+            while not user_code_entrypoint:
+                user_code_entrypoint = self._find_user_code_entrypoint(
+                    self.input1_path)
+                time.sleep(self.polling_time)
+        '''
         return user_code_entrypoint
 
     def _find_keyvalues_user_code_entrypoint(self):
@@ -116,6 +124,7 @@ class PythonRunner:
             while not user_code_entrypoint.exists():
                 logging.info("Waiting for user provided endpoint at "
                              f"{user_code_entrypoint.resolve()}")
+
                 time.sleep(self.polling_time)
 
         return user_code_entrypoint
