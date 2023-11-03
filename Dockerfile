@@ -5,7 +5,7 @@ RUN apt-get install --yes --no-install-recommends python3 python-is-python3 pyth
 USER $NB_UID   
 
 # Copying boot scripts                                                                                                                                                                                                                                                                                                   
-COPY docker /docker
+COPY docker_scripts /docker
 
 ENTRYPOINT [ "/bin/bash", "/docker/entrypoint.bash" ]
 CMD [ "/bin/sh", "-c", "docker/runner.bash "]
