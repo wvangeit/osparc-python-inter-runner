@@ -113,10 +113,10 @@ class PythonRunner:
                 'input_0' in self.keyvalues['input_0']:
             user_code_entrypoint = self.input1_path / \
                 pl.Path(self.keyvalues['input_0']['input_0'])
-            if not user_code_entrypoint.exists():
-                raise ValueError('User provided entrypoint '
-                                 f'{self.keyvalues["input_0"]["input_0"]} '
-                                 f'not found {user_code_entrypoint.resolve()}')
+            while not user_code_entrypoint.exists():
+                logging.info("Waiting for user provided endpoint at "
+                             f"{user_code_entrypoint.resolve()}")
+                time.sleep(self.polling_time)
 
         return user_code_entrypoint
 
