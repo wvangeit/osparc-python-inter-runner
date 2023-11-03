@@ -44,7 +44,10 @@ class PythonRunner:
         self.keyvalues = {}
 
     def _find_user_code_entrypoint(self, code_dir: pl.Path) -> pl.Path:
-        logger.info("Searching for script main entrypoint ...")
+        logger.info(
+            'Trying to find python files in input directory: '
+            f'{code_dir}')
+
         code_files = list(code_dir.rglob("*.py"))
 
         if not code_files:
@@ -83,13 +86,37 @@ class PythonRunner:
         """Trying to find entrypoin"""
 
         user_code_entrypoint = None
-        while not user_code_entrypoint:
-            logger.info(
-                'Trying to find python files in input directory: '
-                f'{self.input1_path}')
+        while not self.keyvalues_path.exists():
+            logging.info("Waiting for keyvalues file at "
+                         f"{self.keyvalues_path}")
+            time.sleep(self.polling_time)
+
+        user_code_entrypoint = self._find_keyvalues_user_code_entrypoint()
+        if not user_code_entrypoint:
             user_code_entrypoint = self._find_user_code_entrypoint(
                 self.input1_path)
-            time.sleep(self.polling_time)
+
+        return user_code_entrypoint
+
+    def _find_keyvalues_user_code_entrypoint(self):
+
+        user_code_entrypoint = None
+
+        if self.keyvalues_path.exists():
+            self.keyvalues = self.read_keyvalues()
+            logging.info(f"Using key-values: {self.keyvalues}")
+        else:
+            logging.info("No key-values file found at "
+                         f"{self.keyvalues_path.resolve()}")
+
+        if 'input_0' in self.keyvalues and \
+                'input_0' in self.keyvalues['input_0']:
+            user_code_entrypoint = self.input1_path / \
+                pl.Path(self.keyvalues['input_0']['input_0'])
+            if not user_code_entrypoint.exists():
+                raise ValueError('User provided entrypoint '
+                                 f'{self.keyvalues["input_0"]["input_0"]} '
+                                 f'not found {user_code_entrypoint.resolve()}')
 
         return user_code_entrypoint
 
@@ -108,24 +135,9 @@ class PythonRunner:
             str(self.user_code_entrypoint.parents[0])
 
     def setup(self):
-        if self.keyvalues_path.exists():
-            self.keyvalues = self.read_keyvalues()
-            logging.info(f"Using key-values: {self.keyvalues}")
-        else:
-            logging.info("No key-values file found at "
-                         f"{self.keyvalues_path.resolve()}")
 
-        if 'input_0' in self.keyvalues and \
-                'input_0' in self.keyvalues['input_0']:
-            self.user_code_entrypoint = self.input1_path / \
-                self.keyvalues['input_0']['input_0']
-            if not self.user_code_entrypoint.exists():
-                raise ValueError('User provided entrypoint '
-                                 f'{self.keyvalues["input_0"]["input_0"]} '
-                                 f'not found {self.input1_path.resolve()}')
-        else:
-            # Try to find user entrypoint, will poll until found
-            self.user_code_entrypoint = self.try_find_user_entrypoint()
+        # Try to find user entrypoint, will poll until found
+        self.user_code_entrypoint = self.try_find_user_entrypoint()
 
         # We have found the user entrypoint
         self.found_user_code_entrypoint = True
