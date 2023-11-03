@@ -41,6 +41,7 @@ class PythonRunner:
         self.polling_time = 1
         self.found_user_code_entrypoint = False
         self.user_code_entrypoint = None
+        self.keyvalues = {}
 
     def _find_user_code_entrypoint(self, code_dir: pl.Path) -> pl.Path:
         logger.info("Searching for script main entrypoint ...")
