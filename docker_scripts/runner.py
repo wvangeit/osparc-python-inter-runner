@@ -32,41 +32,46 @@ class PythonRunner:
     def __init__(self, input_path, polling_time=1):
         """Constructor"""
 
-        self.input_path = input_path
-        self.input0_path = self.input_path / 'input_0'
-        self.input1_path = self.input_path / 'input_1'
+        self.input_path = input_path  # path where osparc write all our input
+        self.pythoncode_path = self.input_path / 'input_1'
         self.keyvalues_path = self.input_path / 'key_values.json'
         self.main_sh_path = pl.Path(__file__).parent.absolute() / 'main.sh'
         self.venv_dir = pl.Path.home() / ".venv"
-        self.polling_time = 1
+        self.polling_time = polling_time
         self.found_user_code_entrypoint = False
         self.user_code_entrypoint = None
         self.keyvalues = {}
 
-    def _find_user_code_entrypoint(self, code_dir: pl.Path) -> pl.Path:
-        logger.info(
-            'Trying to find python files in input directory: '
-            f'{code_dir}')
+    def setup(self):
+        """Setup the Python Runner"""
 
-        code_files = list(code_dir.rglob("*.py"))
+        # Try to find user entrypoint, will poll until found
+        self.user_code_entrypoint = self.try_find_user_entrypoint()
 
-        if not code_files:
-            logger.info('No python files found')
-            return None
+        # We have found the user entrypoint
+        self.found_user_code_entrypoint = True
 
-        if len(code_files) > 1:
-            code_files = list(code_dir.rglob("main.py"))
-            if not code_files:
-                raise ValueError("No main.py found in user-provided directory")
-            if len(code_files) > 1:
-                raise ValueError(
-                    "Multiple main python files found"
-                    " in user-provided directory,"
-                    f"I don't know which one to run: {code_files}")
+        # Set up the user entrypoint
+        self.setup_entrypoint()
 
-        main_py = code_files[0]
-        logger.info("Found %s as python script", main_py)
-        return main_py
+    def start(self):
+        """Start the Python Runner"""
+
+        logger.info(f"Starting script {self.main_sh_path.resolve()} ...")
+        if self.found_user_code_entrypoint:
+            env = os.environ.copy()
+            env |= self.main_env  # Merge envs
+            logging.debug(f'Using env: {env}')
+
+            proc = subprocess.Popen(
+                [f'{self.main_sh_path.resolve()}'], env=env)
+            proc.wait()
+        else:
+            logger.info("No main script found, exiting")
+        logger.info("Finished running python scripts")
+
+    def teardown(self):
+        logger.info("Completed")
 
     def _ensure_pip_requirements(self, code_dir: pl.Path) -> pl.Path:
         logger.info("Searching for requirements file ...")
@@ -85,47 +90,46 @@ class PythonRunner:
     def try_find_user_entrypoint(self):
         """Trying to find entrypoin"""
 
-        user_code_entrypoint = None
+        poll_counter = 0
         while not self.keyvalues_path.exists():
-            logging.info("Waiting for keyvalues file at "
-                         f"{self.keyvalues_path}")
+            if poll_counter % 20 == 0:
+                logging.info("Waiting for keyvalues file at "
+                             f"{self.keyvalues_path}")
             time.sleep(self.polling_time)
+            poll_counter += 1
 
+        poll_counter = 0
+        user_code_entrypoint = None
         while not user_code_entrypoint:
-            logging.info("Waiting for correct keyvalues in "
-                         f"{self.keyvalues_path}")
+            if poll_counter % 20 == 0:
+                logging.info("Waiting for correct keyvalues in "
+                             f"{self.keyvalues_path}")
             time.sleep(self.polling_time)
             user_code_entrypoint = self._find_keyvalues_user_code_entrypoint()
+            poll_counter += 1
 
-        '''
-        if not user_code_entrypoint:
-            while not user_code_entrypoint:
-                user_code_entrypoint = self._find_user_code_entrypoint(
-                    self.input1_path)
-                time.sleep(self.polling_time)
-        '''
+        logging.info(f"Found user entrypoint: {user_code_entrypoint}")
         return user_code_entrypoint
 
     def _find_keyvalues_user_code_entrypoint(self):
 
         user_code_entrypoint = None
 
-        if self.keyvalues_path.exists():
-            self.keyvalues = self.read_keyvalues()
-            logging.info(f"Using key-values: {self.keyvalues}")
-        else:
-            logging.info("No key-values file found at "
-                         f"{self.keyvalues_path.resolve()}")
+        self.keyvalues = self.read_keyvalues()
+        logging.info(f"Found key-values: {self.keyvalues}")
 
         if 'input_0' in self.keyvalues and \
                 'input_0' in self.keyvalues['input_0']:
-            user_code_entrypoint = self.input1_path / \
+            user_code_entrypoint = self.pythoncode_path / \
                 pl.Path(self.keyvalues['input_0']['input_0'])
+            poll_counter = 0
             while not user_code_entrypoint.exists():
-                logging.info("Waiting for user provided endpoint at "
-                             f"{user_code_entrypoint.resolve()}")
-
+                if poll_counter % 20 == 0:
+                    logging.info("Waiting for user provided endpoint at "
+                                 f"{user_code_entrypoint.resolve()} to become "
+                                 "available")
                 time.sleep(self.polling_time)
+                poll_counter += 1
 
         return user_code_entrypoint
 
@@ -133,7 +137,7 @@ class PythonRunner:
         """Setup entrypoint after it is found"""
 
         self.requirements_path = self._ensure_pip_requirements(
-            self.input1_path)
+            self.pythoncode_path)
         self.main_env = {}
         self.main_env['OSPARC_VENV_DIR'] = str(self.venv_dir)
         self.main_env['OSPARC_USER_ENTRYPOINT_PATH'] = \
@@ -143,22 +147,11 @@ class PythonRunner:
         self.main_env['OSPARC_USER_ENTRYPOINT_DIR'] = \
             str(self.user_code_entrypoint.parents[0])
 
-    def setup(self):
-
-        # Try to find user entrypoint, will poll until found
-        self.user_code_entrypoint = self.try_find_user_entrypoint()
-
-        # We have found the user entrypoint
-        self.found_user_code_entrypoint = True
-
-        # Set up the user entrypoint
-        self.setup_entrypoint()
-
     def read_keyvalues(self):
         """Read keyvalues file"""
 
-        with open(self.keyvalues_path) as keyvalues_file:
-            keyvalues_unprocessed = json.load(keyvalues_file)
+        keyvalues_unprocessed = json.loads(
+            self.keyvalues_path.read_text())
 
         keyvalues = {}
         for key, value in keyvalues_unprocessed.items():
@@ -166,23 +159,6 @@ class PythonRunner:
             keyvalues[key][value['key']] = value['value']
 
         return keyvalues
-
-    def start(self):
-        logger.info(f"Starting script {self.main_sh_path.resolve()} ...")
-        if self.found_user_code_entrypoint:
-            env = os.environ.copy()
-            env |= self.main_env  # Merge envs
-            logging.debug(f'Using env: {env}')
-
-            proc = subprocess.Popen(
-                [f'{self.main_sh_path.resolve()}'], env=env)
-            proc.wait()
-        else:
-            logger.info("No main script found, exiting")
-        logger.info("Finished running python scripts")
-
-    def teardown(self):
-        logger.info("Completed")
 
 
 if __name__ == "__main__":
